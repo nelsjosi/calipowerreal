@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaflet Map Example with Local CSV Data</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+  <style>
+    /* CSS for map container */
+    #map { height: 400px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // Initialize the map
+    var map = L.map('map').setView([36.137, -119.567], 7);
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    // Updated csvToGeoJSON function
+    function csvToGeoJSON(csv) {
+      var lines = csv.split("\n");
+      var features = [];
+
+      var headers = lines[0].split(",");
+
+      for (var i = 1; i < lines.length; i++) {
+        var data = lines[i].split(",");
+        if (data.length == headers.length) {
+          var feature = {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [parseFloat(data[11]), parseFloat(data[10])]
+            },
+            "properties": {}
+          };
+          // Add properties from CSV headers
+          for (var j = 0; j < headers.length; j++) {
+            feature.properties[headers[j]] = data[j];
+          }
+          features.push(feature);
+        }
+      }
+      return {
+        "type": "FeatureCollection",
+        "features": features
+      };
+    }
+
+    // Local file path for CSV data
+    var csvFilePath = "C:\\Users\\josia\\Downloads\\Power_Plant_5008310403144546241 (1).csv";  // Update with your actual path
+
+    // Read the local CSV file (consider security for web applications)
+fetch('C:\\Users\\josia\\Downloads\\Power_Plant_5008310403144546241 (1).csv')
+  .then(response => response.text())
+  .then(csvData => {
+    // Convert CSV data to GeoJSON
+    var geojsonData = csvToGeoJSON(csvData);
+
+    // Add GeoJSON layer to map with custom markers
+    L.geoJSON(geojsonData, {
+      pointToLayer: function (feature, latlng) {
+        // Customize the marker symbol and color based on properties
+        var markerOptions = {
+          radius: 8,
+          fillColor: "#ff7800",
+          color: "#000",
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        };
+        return L.circleMarker(latlng, markerOptions);
+      },
+      onEachFeature: function (feature, layer) {
+        var popupContent = "";
+        // Generate popup content dynamically from feature properties
+        for (var prop in feature.properties) {
+          popupContent += "<b>" + prop + ":</b> " + feature.properties[prop] + "<br>";
+        }
+        layer.bindPopup(popupContent);
+      }
+    }).addTo(map);
+  });
+  </script>
+</body>
+</html>
